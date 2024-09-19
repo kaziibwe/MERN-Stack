@@ -5,22 +5,48 @@ import jwt from 'jsonwebtoken'
 import cookieParser from 'cookie-parser'
 import StudentModel from './models/Student.js'
 
+
+import sequelize from './db.js';
+import Student from './models/StudentModel.js';  // Import your models here
+
+
+
 const app = express()
 app.use(express.json())
 app.use(cookieParser())
-app.use(cors({
-    origin: ["http://localhost:5173"],
-    credentials: true
-})) 
+// app.use(cors({
+//     origin: ["http://localhost:5173"],
+//     credentials: true
+// })) 
 
-mongoose.connect('mongodb://127.0.0.1:27017/school')
+// mongoose.connect( "mongodb://alfred:Ka075.@localhost:27017/school?authSource=admin")
 
-app.post('/register', (req, res) => {
-    const {name, email, password} = req.body;
-    StudentModel.create({name, email, password})
-    .then(user => res.json(user))
-    .catch(err => res.json(err))
-})
+// Sync all models and then start the server
+
+// app.post('/register', (req, res) => {
+//     const {name, email, password} = req.body;
+//     StudentModel.create({name, email, password})
+//     .then(user => res.json(user))
+//     .catch(err => res.json(err))
+// })
+
+
+
+
+app.post('/register', async (req, res) => {
+    try {
+        const { name, email, password } = req.body;
+        
+        // Create a new student using Sequelize
+        const student = await Student.create({ name, email, password });
+        
+        res.json(student);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+
 
 app.post('/login', (req, res) => {
     const {email, password} = req.body;
@@ -86,6 +112,17 @@ app.get('/dashboard',varifyUser, (req, res) => {
     return res.json({valid: true, message: "authorized"})
 })
 
-app.listen(3001, () => { 
-    console.log("Server is Running")
-})
+
+
+sequelize.sync()
+    .then(() => {
+        console.log('Database & tables created!');
+
+        // Start the server after syncing
+        app.listen(3003, () => {
+            console.log("Server running on port 3000");
+        });
+    })
+    .catch(err => {
+        console.error('Error syncing database:', err);
+    });
